@@ -54,9 +54,9 @@ extern "C" gridfile_t get_gridfile(const char* mongod_host, const char* gridfs_d
         gridfile.write(oss);
         char* buffer;
         long size;
+	size = gridfile.getContentLength();
         buffer = new char[size];
 
-        size = gridfile.getContentLength();
         oss.read(buffer, size);
         
     gridfile_t result = {
