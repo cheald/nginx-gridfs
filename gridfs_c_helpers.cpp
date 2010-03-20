@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include "client/dbclient.h"
+#include "client/connpool.h"
 #include "client/gridfs.h"
 
 #include "gridfs_c_helpers.h"
@@ -35,23 +36,18 @@ extern "C" gridfile_t get_gridfile(const char* mongod_host, const char* gridfs_d
         ""
     };
 		
-    mongo::DBClientConnection connection;
+	std::string host = std::string(mongod_host);
+	mongo::ScopedDbConnection conn(host);
 
-    try {
-        connection.connect(std::string(mongod_host));
-    } catch (mongo::DBException &e) {
-        return mongo_exception;
-    }
-
-    mongo::GridFS gridfs(connection, std::string(gridfs_db), std::string(gridfs_root_collection));
+    mongo::GridFS gridfs(conn.conn(), std::string(gridfs_db), std::string(gridfs_root_collection));
     mongo::GridFile gridfile = gridfs.findFile(std::string(filename));
 
     if (!gridfile.exists()) {
         return no_file;
     }
 
-		std::stringstream oss (std::stringstream::in | std::stringstream::out | std::stringstream::binary);
-		gridfile.write(oss);
+	std::stringstream oss (std::stringstream::in | std::stringstream::out | std::stringstream::binary);
+	gridfile.write(oss);
 
     char* buffer;
     long size;
@@ -66,6 +62,7 @@ extern "C" gridfile_t get_gridfile(const char* mongod_host, const char* gridfs_d
         gridfile.getContentType().c_str() /*"text/plain"*/ /* TODO use real mimetype */
     };
 
+	conn.done();
     return result;
 }
 
